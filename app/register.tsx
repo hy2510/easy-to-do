@@ -16,8 +16,10 @@ import { supabase } from "./lib/supabase";
 // 웹과 모바일에서 모두 작동하는 Alert 함수
 const showAlert = (title: string, message: string, onPress?: () => void) => {
   if (Platform.OS === "web") {
-    // 웹에서는 window.alert 사용
-    window.alert(`${title}\n\n${message}`);
+    // 웹에서는 클라이언트 사이드에서만 window.alert 사용
+    if (typeof window !== "undefined") {
+      window.alert(`${title}\n\n${message}`);
+    }
     if (onPress) onPress();
   } else {
     // 모바일에서는 React Native Alert 사용
