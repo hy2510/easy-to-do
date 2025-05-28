@@ -43,6 +43,28 @@ jobs:
           find dist -name "*.html" -type f -exec sed -i 's|href="/favicon.ico"|href="/easy-to-do/favicon.ico"|g' {} \;
           find dist -name "*.html" -type f -exec sed -i 's|href="/"|href="/easy-to-do/"|g' {} \;
 
+      - name: Add SPA routing script to HTML files
+        run: |
+          # 메인 HTML 파일들에 SPA 라우팅 스크립트 추가
+          for file in dist/*.html; do
+            if [ -f "$file" ]; then
+              # </head> 태그 바로 앞에 스크립트 삽입
+              sed -i 's|</head>|<script type="text/javascript">
+                // GitHub Pages SPA routing for subpath
+                (function(l) {
+                  if (l.search[1] === "/" ) {
+                    var decoded = l.search.slice(1).split("&").map(function(s) { 
+                      return s.replace(/~and~/g, "&")
+                    }).join("?");
+                    window.history.replaceState(null, null,
+                        l.pathname.slice(0, -1) + decoded + l.hash
+                    );
+                  }
+                }(window.location))
+              </script></head>|' "$file"
+            fi
+          done
+
       - name: Copy 404.html for SPA routing
         run: cp public/404.html dist/404.html
 
