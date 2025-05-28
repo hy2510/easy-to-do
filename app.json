@@ -26,8 +26,7 @@
     "web": {
       "bundler": "metro",
       "output": "static",
-      "favicon": "./assets/images/favicon.png",
-      "baseUrl": "/easy-to-do"
+      "favicon": "./assets/images/favicon.png"
     },
     "plugins": ["expo-router"],
     "scheme": "easytodo",
