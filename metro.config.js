@@ -10,4 +10,12 @@ config.resolver.extraNodeModules = {
   ws: require.resolve("./polyfills/ws-polyfill.js"),
 };
 
+// GitHub Pages 서브패스를 위한 publicPath 설정
+if (process.env.NODE_ENV === "production") {
+  config.server = {
+    ...config.server,
+    publicPath: "/easy-to-do/",
+  };
+}
+
 module.exports = config;
