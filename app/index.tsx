@@ -1,11 +1,15 @@
 import { Redirect } from "expo-router";
 import { useEffect, useState } from "react";
-import { Platform } from "react-native";
+import { Platform, Text, View } from "react-native";
 
 export default function Index() {
+  const [isClient, setIsClient] = useState(false);
   const [redirectPath, setRedirectPath] = useState<string>("/login");
 
   useEffect(() => {
+    // 클라이언트 사이드임을 표시
+    setIsClient(true);
+
     // 웹에서만 URL 파라미터 확인
     if (Platform.OS === "web" && typeof window !== "undefined") {
       const urlParams = new URLSearchParams(window.location.search);
@@ -25,6 +29,22 @@ export default function Index() {
       }
     }
   }, []);
+
+  // 클라이언트가 준비되지 않았으면 로딩 화면 표시
+  if (!isClient) {
+    return (
+      <View
+        style={{
+          flex: 1,
+          justifyContent: "center",
+          alignItems: "center",
+          backgroundColor: "#f5f5f5",
+        }}
+      >
+        <Text style={{ fontSize: 16, color: "#666" }}>Loading...</Text>
+      </View>
+    );
+  }
 
   return <Redirect href={redirectPath as any} />;
 }
