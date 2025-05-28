@@ -48,6 +48,7 @@ export default function TodoList({
   selectedDate,
   onTodosChange,
 }: TodoListProps) {
+  const [isClient, setIsClient] = useState(false);
   const [newTodo, setNewTodo] = useState("");
   const [isInputMode, setIsInputMode] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
@@ -55,6 +56,11 @@ export default function TodoList({
   const [todos, setTodos] = useState<Todo[]>([]);
   const inputRef = useRef<TextInput>(null);
   const modalInputRef = useRef<TextInput>(null);
+
+  // 클라이언트 사이드 체크
+  useEffect(() => {
+    setIsClient(true);
+  }, []);
 
   const dateKey = format(selectedDate, "yyyy-MM-dd");
   const isWeb = Platform.OS === "web";

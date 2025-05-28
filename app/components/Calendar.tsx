@@ -46,24 +46,28 @@ interface Todo {
 
 interface CalendarProps {
   userName?: string;
-  onLogout?: () => void;
+  onLogout: () => void;
 }
 
 export default function Calendar({ userName, onLogout }: CalendarProps) {
-  const [currentDate, setCurrentDate] = useState(new Date());
-  const [selectedDate, setSelectedDate] = useState(new Date());
+  // Hydration 오류 방지를 위한 상태
+  const [isClient, setIsClient] = useState(false);
+  const [currentDate, setCurrentDate] = useState<Date | null>(null);
+  const [selectedDate, setSelectedDate] = useState<Date | null>(null);
   const [todos, setTodos] = useState<Todo[]>([]);
   const [loading, setLoading] = useState(false);
 
-  const monthStart = startOfMonth(currentDate);
-  const calendarStart = startOfWeek(monthStart, { weekStartsOn: 0 });
+  // 클라이언트 사이드에서만 날짜 초기화
+  useEffect(() => {
+    setIsClient(true);
+    const now = new Date();
+    setCurrentDate(now);
+    setSelectedDate(now);
+  }, []);
 
-  // 항상 6주(42일)를 표시하도록 계산
-  const calendarDays = Array.from({ length: 42 }, (_, i) =>
-    addDays(calendarStart, i)
-  );
+  const fetchTodos = React.useCallback(async () => {
+    if (!isClient || !currentDate) return;
 
-  const fetchTodos = async () => {
     try {
       setLoading(true);
       const {
@@ -75,6 +79,8 @@ export default function Calendar({ userName, onLogout }: CalendarProps) {
         return;
       }
 
+      const monthStart = startOfMonth(currentDate);
+      const calendarStart = startOfWeek(monthStart, { weekStartsOn: 0 });
       const startDate = format(calendarStart, "yyyy-MM-dd");
       const endDate = format(addDays(calendarStart, 41), "yyyy-MM-dd");
 
@@ -96,7 +102,31 @@ export default function Calendar({ userName, onLogout }: CalendarProps) {
     } finally {
       setLoading(false);
     }
-  };
+  }, [isClient, currentDate]);
+
+  // 할 일 목록 불러오기
+  useEffect(() => {
+    fetchTodos();
+  }, [fetchTodos]);
+
+  // 클라이언트가 준비되지 않았으면 로딩 표시
+  if (!isClient || !currentDate || !selectedDate) {
+    return (
+      <SafeAreaView style={styles.safeArea}>
+        <View style={styles.loadingContainer}>
+          <Text style={styles.loadingText}>로딩 중...</Text>
+        </View>
+      </SafeAreaView>
+    );
+  }
+
+  const monthStart = startOfMonth(currentDate);
+  const calendarStart = startOfWeek(monthStart, { weekStartsOn: 0 });
+
+  // 항상 6주(42일)를 표시하도록 계산
+  const calendarDays = Array.from({ length: 42 }, (_, i) =>
+    addDays(calendarStart, i)
+  );
 
   const previousMonth = () => {
     setCurrentDate(subMonths(currentDate, 1));
@@ -116,7 +146,10 @@ export default function Calendar({ userName, onLogout }: CalendarProps) {
     setSelectedDate(today);
   };
 
-  const isDateToday = (date: Date) => isSameDay(date, new Date());
+  const isDateToday = (date: Date) => {
+    if (!isClient) return false;
+    return isSameDay(date, new Date());
+  };
 
   const getDayColor = (date: Date) => {
     if (!isSameMonth(date, currentDate)) {
@@ -133,10 +166,6 @@ export default function Calendar({ userName, onLogout }: CalendarProps) {
     const dateTodos = todos.filter((todo) => todo.date === dateKey);
     return dateTodos.filter((todo) => !todo.completed).length;
   };
-
-  useEffect(() => {
-    fetchTodos();
-  }, [currentDate]);
 
   return (
     <SafeAreaView style={styles.safeArea}>
@@ -269,6 +298,15 @@ const styles = StyleSheet.create({
   scrollContent: {
     flexGrow: 1,
     width: "100%",
+  },
+  loadingContainer: {
+    flex: 1,
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  loadingText: {
+    fontSize: 16,
+    color: "#666",
   },
   container: {
     backgroundColor: "#fff",
