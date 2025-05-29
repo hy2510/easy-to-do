@@ -44,6 +44,30 @@ jobs:
           cp public/404.html dist/404.html
           cp public/.nojekyll dist/.nojekyll
 
+      - name: Fix paths for GitHub Pages subpath
+        run: |
+          echo "=== 빌드된 파일 구조 확인 ==="
+          find dist -type f -name "*.html" | head -5
+          find dist -type f -name "*.js" | head -5
+
+          echo "=== HTML 파일 경로 수정 ==="
+          # HTML 파일들에서 절대 경로를 GitHub Pages 서브패스 포함으로 변경
+          find dist -name "*.html" -type f -exec sed -i 's|src="/_expo|src="/easy-to-do/_expo|g' {} \;
+          find dist -name "*.html" -type f -exec sed -i 's|href="/_expo|href="/easy-to-do/_expo|g' {} \;
+          find dist -name "*.html" -type f -exec sed -i 's|src="/assets|src="/easy-to-do/assets|g' {} \;
+          find dist -name "*.html" -type f -exec sed -i 's|href="/assets|href="/easy-to-do/assets|g' {} \;
+          find dist -name "*.html" -type f -exec sed -i 's|href="/favicon.ico"|href="/easy-to-do/favicon.ico"|g' {} \;
+          find dist -name "*.html" -type f -exec sed -i 's|"baseUrl":"/""|"baseUrl":"/easy-to-do/"|g' {} \;
+
+          echo "=== JavaScript 파일 경로 수정 ==="
+          # JavaScript 파일들에서 assets 경로 수정
+          find dist -name "*.js" -type f -exec sed -i 's|"/assets/|"/easy-to-do/assets/|g' {} \;
+          find dist -name "*.js" -type f -exec sed -i "s|'/assets/|'/easy-to-do/assets/|g" {} \;
+          find dist -name "*.js" -type f -exec sed -i 's|"/_expo/|"/easy-to-do/_expo/|g' {} \;
+          find dist -name "*.js" -type f -exec sed -i "s|'/_expo/|'/easy-to-do/_expo/|g" {} \;
+
+          echo "=== 수정 완료 ==="
+
       - name: Setup Pages
         uses: actions/configure-pages@v4
 

@@ -17,8 +17,6 @@ export default function Index() {
       console.log("Index - 웹 환경에서 라우팅 처리 시작");
       console.log("Index - 현재 URL:", window.location.href);
       console.log("Index - 현재 pathname:", window.location.pathname);
-      console.log("Index - 현재 search:", window.location.search);
-      console.log("Index - 현재 hash:", window.location.hash);
 
       const processRouting = async () => {
         try {
@@ -85,19 +83,19 @@ export default function Index() {
           }
 
           if (sessionPathQuery) {
-            // sessionPathQuery에서 baseUrl 부분 제거하여 앱 내부 경로로 변환
+            // sessionPathQuery에서 /easy-to-do/ 부분 제거하여 앱 내부 경로로 변환
             let appPath = sessionPathQuery;
             console.log("Index - 원본 세션 경로:", appPath);
 
             if (appPath.startsWith("/easy-to-do/")) {
               appPath = appPath.substring("/easy-to-do".length);
-              console.log("Index - baseUrl 제거 후:", appPath);
+              console.log("Index - /easy-to-do/ 제거 후:", appPath);
+            }
+            if (!appPath || appPath === "/") {
+              appPath = "/login";
             }
             if (!appPath.startsWith("/")) {
               appPath = "/" + appPath;
-            }
-            if (appPath === "/") {
-              appPath = "/login";
             }
 
             console.log("Index - 최종 앱 경로:", appPath);
@@ -106,26 +104,9 @@ export default function Index() {
             return;
           }
 
-          // 현재 경로 분석
-          const currentPath = window.location.pathname;
-          console.log("Index - 현재 경로 분석:", currentPath);
-
-          // baseUrl로 시작하는 경우 앱 경로 추출
-          if (currentPath.startsWith("/easy-to-do/")) {
-            const appPath = currentPath.substring("/easy-to-do".length) || "/";
-            console.log("Index - baseUrl 제거된 앱 경로:", appPath);
-
-            if (appPath === "/" || appPath === "") {
-              setRedirectPath("/login");
-            } else {
-              setRedirectPath(appPath);
-            }
-          } else {
-            // baseUrl로 시작하지 않는 경우 기본 로그인
-            console.log("Index - baseUrl로 시작하지 않음, 로그인으로 이동");
-            setRedirectPath("/login");
-          }
-
+          // 기본값: 로그인 페이지
+          console.log("Index - 기본 로그인 페이지로 이동");
+          setRedirectPath("/login");
           setIsReady(true);
         } catch (error) {
           console.error("Index - 라우팅 처리 중 오류:", error);
