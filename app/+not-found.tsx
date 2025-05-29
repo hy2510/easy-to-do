@@ -36,8 +36,8 @@ export default function NotFound() {
       }
 
       // 기본값: 로그인 페이지
-      console.log("NotFound - Redirecting to default: /login");
-      setRedirectPath("/login");
+      console.log("NotFound - Redirecting to default: /easy-to-do/login");
+      setRedirectPath("/easy-to-do/login");
     }
   }, []);
 
