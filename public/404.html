@@ -2,31 +2,64 @@
 <html>
   <head>
     <meta charset="utf-8" />
-    <title>Easy To-Do</title>
+    <title>Easy To-Do - Redirecting...</title>
     <script type="text/javascript">
-      // GitHub Pages SPA 라우팅을 위한 간단한 리다이렉트
-      var l = window.location;
-      var baseUrl = "/easy-to-do/";
+      // GitHub Pages SPA 라우팅을 위한 리다이렉트
+      (function () {
+        var l = window.location;
+        var baseUrl = "/easy-to-do/";
 
-      // 현재 경로에서 서브패스 제거
-      var currentPath = l.pathname.replace(baseUrl, "") || "";
+        console.log("404.html - Current location:", l.href);
+        console.log("404.html - Pathname:", l.pathname);
 
-      // 메인 페이지로 리다이렉트하면서 경로 정보를 쿼리 파라미터로 전달
-      var redirectUrl =
-        l.protocol +
-        "//" +
-        l.hostname +
-        (l.port ? ":" + l.port : "") +
-        baseUrl +
-        "?redirect=" +
-        encodeURIComponent(currentPath) +
-        (l.search ? "&" + l.search.slice(1) : "") +
-        l.hash;
+        // 현재 경로에서 서브패스 제거
+        var currentPath =
+          l.pathname.replace(baseUrl, "").replace("/easy-to-do", "") || "";
 
-      window.location.replace(redirectUrl);
+        console.log("404.html - Extracted path:", currentPath);
+
+        // 쿼리 파라미터와 해시 보존
+        var queryString = l.search ? l.search.slice(1) : "";
+        var hash = l.hash || "";
+
+        // 메인 페이지로 리다이렉트하면서 경로 정보를 세션 스토리지에 저장
+        if (currentPath && currentPath !== "/") {
+          try {
+            sessionStorage.setItem("redirect-path", currentPath);
+            if (queryString) {
+              sessionStorage.setItem("redirect-search", queryString);
+            }
+            if (hash) {
+              sessionStorage.setItem("redirect-hash", hash);
+            }
+          } catch (e) {
+            console.warn("SessionStorage not available:", e);
+          }
+        }
+
+        // 메인 페이지로 리다이렉트
+        var redirectUrl =
+          l.protocol +
+          "//" +
+          l.hostname +
+          (l.port ? ":" + l.port : "") +
+          baseUrl;
+
+        console.log("404.html - Redirecting to:", redirectUrl);
+        window.location.replace(redirectUrl);
+      })();
     </script>
   </head>
   <body>
-    <p>Redirecting...</p>
+    <div
+      style="
+        font-family: Arial, sans-serif;
+        text-align: center;
+        margin-top: 50px;
+      "
+    >
+      <h2>Redirecting...</h2>
+      <p>페이지를 찾고 있습니다. 잠시만 기다려주세요.</p>
+    </div>
   </body>
 </html>

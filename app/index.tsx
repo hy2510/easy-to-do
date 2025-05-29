@@ -19,9 +19,30 @@ export default function Index() {
       const hashParams = new URLSearchParams(window.location.hash.substring(1));
       const redirectParam = searchParams.get("redirect");
 
-      console.log("Current path:", currentPath);
-      console.log("Redirect param:", redirectParam);
-      console.log("Hash params:", window.location.hash);
+      console.log("Index - Current path:", currentPath);
+      console.log("Index - Redirect param:", redirectParam);
+      console.log("Index - Hash params:", window.location.hash);
+
+      // 세션 스토리지에서 리다이렉트 정보 확인
+      let sessionRedirectPath = "";
+      let sessionSearch = "";
+      let sessionHash = "";
+
+      try {
+        sessionRedirectPath = sessionStorage.getItem("redirect-path") || "";
+        sessionSearch = sessionStorage.getItem("redirect-search") || "";
+        sessionHash = sessionStorage.getItem("redirect-hash") || "";
+
+        // 사용한 후 제거
+        if (sessionRedirectPath) {
+          sessionStorage.removeItem("redirect-path");
+          sessionStorage.removeItem("redirect-search");
+          sessionStorage.removeItem("redirect-hash");
+          console.log("Index - Session redirect path:", sessionRedirectPath);
+        }
+      } catch (e) {
+        console.warn("SessionStorage not available:", e);
+      }
 
       // 이메일 인증 토큰 처리
       const accessToken = hashParams.get("access_token");
@@ -33,7 +54,7 @@ export default function Index() {
         refreshToken &&
         (tokenType === "signup" || tokenType === "recovery")
       ) {
-        console.log("Processing email verification tokens...");
+        console.log("Index - Processing email verification tokens...");
         setIsProcessingAuth(true);
 
         // Supabase 세션 설정
@@ -62,12 +83,29 @@ export default function Index() {
         return;
       }
 
+      // 세션 스토리지에서 리다이렉트 정보가 있는 경우 우선 처리
+      if (sessionRedirectPath && sessionRedirectPath !== "/") {
+        const targetPath = sessionRedirectPath.startsWith("/")
+          ? sessionRedirectPath
+          : `/${sessionRedirectPath}`;
+        const validPaths = ["/login", "/register", "/(app)/main"];
+
+        if (validPaths.includes(targetPath)) {
+          console.log(
+            "Index - Redirecting from session storage to:",
+            targetPath
+          );
+          setRedirectPath(targetPath);
+          return;
+        }
+      }
+
       // GitHub Pages 서브패스 처리
       if (currentPath.includes("/easy-to-do/")) {
         const pathAfterBase = currentPath
           .replace("/easy-to-do/", "")
           .replace("/easy-to-do", "");
-        console.log("Path after base:", pathAfterBase);
+        console.log("Index - Path after base:", pathAfterBase);
 
         if (pathAfterBase && pathAfterBase !== "/") {
           const targetPath = pathAfterBase.startsWith("/")
@@ -118,6 +156,6 @@ export default function Index() {
     );
   }
 
-  console.log("Redirecting to:", redirectPath);
+  console.log("Index - Redirecting to:", redirectPath);
   return <Redirect href={redirectPath as any} />;
 }
