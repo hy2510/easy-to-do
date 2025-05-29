@@ -100,30 +100,28 @@ export default function RegisterScreen() {
         return;
       }
 
-      // 회원가입 성공했지만 사용자가 없는 경우 (이미 존재하는 이메일)
+      // 회원가입 성공했지만 사용자가 없는 경우 (드물지만 오류 상황)
       if (!authData?.user) {
         const message =
-          "이미 가입된 이메일 주소입니다. 다른 이메일을 사용해주세요.";
+          "회원가입 처리 중 오류가 발생했습니다. 다시 시도해주세요.";
         setErrorMessage(message);
         showAlert("회원가입 실패", message);
         return;
       }
 
-      // 사용자는 생성되었지만 세션이 없는 경우 (이메일 인증 필요하거나 이미 존재)
+      // 사용자는 생성되었지만 세션이 없는 경우 (이메일 인증 필요)
       if (authData.user && !authData.session) {
-        // 사용자 ID가 있지만 세션이 없는 경우, 이미 존재하는 사용자일 가능성
-        console.log(
-          "사용자는 있지만 세션이 없음 - 이미 존재하는 이메일일 수 있음"
-        );
-        const message =
-          "이미 가입된 이메일 주소입니다. 로그인 화면에서 로그인해주세요.";
-        setErrorMessage(message);
-        showAlert("회원가입 실패", message, () => router.replace("/login"));
+        console.log("이메일 인증이 필요한 새 사용자 생성됨");
+
+        // 이메일 인증이 필요한 경우
+        const message = `${email}로 인증 이메일을 발송했습니다. 이메일을 확인하고 인증을 완료해주세요.`;
+        setErrorMessage("");
+        showAlert("인증 이메일 발송", message, () => router.replace("/login"));
         return;
       }
 
       if (authData?.user && authData?.session) {
-        console.log("새 사용자 생성 성공");
+        console.log("새 사용자 생성 및 자동 로그인 성공");
 
         // 사용자 프로필 정보 저장
         try {
