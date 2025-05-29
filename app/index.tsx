@@ -1,26 +1,15 @@
-import { useCallback, useEffect, useState } from "react";
+import { Redirect } from "expo-router";
+import { useEffect, useState } from "react";
 import { Platform, Text, View } from "react-native";
 import { supabase } from "./lib/supabase";
 
 export default function Index() {
   const [isClient, setIsClient] = useState(false);
+  const [redirectPath, setRedirectPath] = useState<string>("/login");
   const [isProcessingAuth, setIsProcessingAuth] = useState(false);
-  const [appBaseUrl, setAppBaseUrl] = useState<string>("");
-
-  const determineBaseUrl = useCallback(() => {
-    if (typeof window !== "undefined") {
-      const path = window.location.pathname;
-      if (path.includes("/easy-to-do/")) {
-        return "/easy-to-do";
-      }
-    }
-    return "";
-  }, []);
 
   useEffect(() => {
     setIsClient(true);
-    const currentBaseUrl = determineBaseUrl();
-    setAppBaseUrl(currentBaseUrl);
 
     if (Platform.OS === "web" && typeof window !== "undefined") {
       const processRouting = async () => {
@@ -31,6 +20,7 @@ export default function Index() {
         const refreshToken = hashParams.get("refresh_token");
         const tokenType = hashParams.get("type");
 
+        // 이메일 인증 토큰 처리
         if (
           accessToken &&
           refreshToken &&
@@ -38,27 +28,35 @@ export default function Index() {
         ) {
           console.log("Index - Processing email verification tokens...");
           setIsProcessingAuth(true);
+
           const { error } = await supabase.auth.setSession({
             access_token: accessToken,
             refresh_token: refreshToken,
           });
+
           if (error) {
             console.error("Index - Session setting error:", error);
-            const loginUrl = window.location.origin + currentBaseUrl + "/login";
-            console.log("Index - Redirecting to login:", loginUrl);
-            window.location.href = loginUrl;
+            setRedirectPath("/login");
           } else {
             console.log(
               "Index - Email verification successful, redirecting to main"
             );
-            const mainUrl =
-              window.location.origin + currentBaseUrl + "/(app)/main";
-            console.log("Index - Redirecting to main:", mainUrl);
-            window.location.href = mainUrl;
+            setRedirectPath("/(app)/main");
+          }
+          setIsProcessingAuth(false);
+
+          // URL에서 토큰 제거 (상대 경로로)
+          if (window.history.replaceState) {
+            window.history.replaceState(
+              {},
+              document.title,
+              window.location.pathname
+            );
           }
           return;
         }
 
+        // 세션 스토리지에서 리다이렉트 정보 확인
         let sessionPathQuery = "";
         let sessionHash = "";
         try {
@@ -79,33 +77,30 @@ export default function Index() {
         }
 
         if (sessionPathQuery) {
-          const finalUrl =
-            window.location.origin + sessionPathQuery + sessionHash;
-          console.log("Index - Redirecting from session to:", finalUrl);
-          window.location.href = finalUrl;
+          // sessionPathQuery에서 baseUrl 부분 제거하여 앱 내부 경로로 변환
+          let appPath = sessionPathQuery;
+          if (appPath.startsWith("/easy-to-do/")) {
+            appPath = appPath.substring("/easy-to-do".length);
+          }
+          if (!appPath.startsWith("/")) {
+            appPath = "/" + appPath;
+          }
+
+          console.log("Index - Redirecting from session to app path:", appPath);
+          setRedirectPath(appPath + sessionHash);
           return;
         }
 
-        if (
-          window.location.pathname === currentBaseUrl ||
-          window.location.pathname === currentBaseUrl + "/"
-        ) {
-          const defaultUrl = window.location.origin + currentBaseUrl + "/login";
-          console.log("Index - Redirecting to default page:", defaultUrl);
-          window.location.href = defaultUrl;
-          return;
-        }
-
-        // 현재 URL이 이미 올바른 형태라면 그대로 유지
-        console.log(
-          "Index - Current URL is already correct:",
-          window.location.href
-        );
+        // 기본값: 로그인 페이지
+        console.log("Index - Using default login page");
+        setRedirectPath("/login");
       };
+
       processRouting();
     }
-  }, [determineBaseUrl]);
+  }, []);
 
+  // 클라이언트가 준비되지 않았거나 인증 처리 중이면 로딩 화면 표시
   if (!isClient || isProcessingAuth) {
     return (
       <View
@@ -123,17 +118,6 @@ export default function Index() {
     );
   }
 
-  // 로딩이 완료되면 현재 페이지를 그대로 유지 (더 이상 Redirect 사용 안 함)
-  return (
-    <View
-      style={{
-        flex: 1,
-        justifyContent: "center",
-        alignItems: "center",
-        backgroundColor: "#f5f5f5",
-      }}
-    >
-      <Text style={{ fontSize: 16, color: "#666" }}>페이지 로딩 중...</Text>
-    </View>
-  );
+  console.log("Index - Final redirect path:", redirectPath);
+  return <Redirect href={redirectPath as any} />;
 }

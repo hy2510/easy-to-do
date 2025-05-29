@@ -44,17 +44,6 @@ jobs:
           cp public/404.html dist/404.html
           cp public/.nojekyll dist/.nojekyll
 
-      - name: Fix paths for GitHub Pages subpath
-        run: |
-          # HTML 파일들에서 절대 경로를 상대 경로로 변경
-          find dist -name "*.html" -type f -exec sed -i 's|src="/_expo|src="/easy-to-do/_expo|g' {} \;
-          find dist -name "*.html" -type f -exec sed -i 's|href="/favicon.ico"|href="/easy-to-do/favicon.ico"|g' {} \;
-          find dist -name "*.html" -type f -exec sed -i 's|href="/"|href="/easy-to-do/"|g' {} \;
-
-          # JavaScript 파일들에서 assets 경로 수정
-          find dist -name "*.js" -type f -exec sed -i 's|"/assets/|"/easy-to-do/assets/|g' {} \;
-          find dist -name "*.js" -type f -exec sed -i "s|'/assets/|'/easy-to-do/assets/|g" {} \;
-
       - name: Setup Pages
         uses: actions/configure-pages@v4
 

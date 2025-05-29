@@ -62,22 +62,7 @@ export default function LoginScreen() {
       }
 
       if (data?.user) {
-        // 플랫폼별 라우팅 처리
-        if (Platform.OS === "web") {
-          // 웹에서는 GitHub Pages 서브패스 유지를 위해 전체 URL 사용
-          const currentBaseUrl = window.location.pathname.includes(
-            "/easy-to-do/"
-          )
-            ? "/easy-to-do"
-            : "";
-          const mainUrl =
-            window.location.origin + currentBaseUrl + "/(app)/main";
-          console.log("Login - Redirecting to main (web):", mainUrl);
-          window.location.href = mainUrl;
-        } else {
-          // 앱에서는 기존 Expo Router 사용
-          router.replace("/(app)/main");
-        }
+        router.replace("/(app)/main");
       }
     } catch (error) {
       console.error("로그인 오류:", error);
@@ -134,27 +119,7 @@ export default function LoginScreen() {
 
         <TouchableOpacity
           style={styles.registerButton}
-          onPress={() => {
-            // 플랫폼별 라우팅 처리
-            if (Platform.OS === "web") {
-              // 웹에서는 GitHub Pages 서브패스 유지를 위해 전체 URL 사용
-              const currentBaseUrl = window.location.pathname.includes(
-                "/easy-to-do/"
-              )
-                ? "/easy-to-do"
-                : "";
-              const registerUrl =
-                window.location.origin + currentBaseUrl + "/register";
-              console.log(
-                "Login - Redirecting to register (web):",
-                registerUrl
-              );
-              window.location.href = registerUrl;
-            } else {
-              // 앱에서는 기존 Expo Router 사용
-              router.push("/register");
-            }
-          }}
+          onPress={() => router.push("/register")}
           disabled={loading}
         >
           <Text style={styles.registerButtonText}>
