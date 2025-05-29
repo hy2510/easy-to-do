@@ -15,7 +15,7 @@ export default function NotFound() {
       console.log("NotFound - Current path:", currentPath);
 
       // GitHub Pages 서브패스에서 실제 경로 추출
-      if (currentPath.includes("/easy-to-do/")) {
+      if (currentPath.includes("")) {
         const pathAfterBase = currentPath
           .replace("/easy-to-do/", "")
           .replace("/easy-to-do", "");
