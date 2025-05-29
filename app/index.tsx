@@ -7,6 +7,7 @@ export default function Index() {
   const [isClient, setIsClient] = useState(false);
   const [redirectPath, setRedirectPath] = useState<string>("/login");
   const [isProcessingAuth, setIsProcessingAuth] = useState(false);
+  const [baseUrl, setBaseUrl] = useState<string>("");
 
   useEffect(() => {
     // 클라이언트 사이드임을 표시
@@ -19,9 +20,14 @@ export default function Index() {
       const hashParams = new URLSearchParams(window.location.hash.substring(1));
       const redirectParam = searchParams.get("redirect");
 
+      // GitHub Pages 기본 URL 설정
+      const isGitHubPages = currentPath.includes("/easy-to-do/");
+      setBaseUrl(isGitHubPages ? "/easy-to-do" : "");
+
       console.log("Index - Current path:", currentPath);
       console.log("Index - Redirect param:", redirectParam);
       console.log("Index - Hash params:", window.location.hash);
+      console.log("Index - Base URL:", isGitHubPages ? "/easy-to-do" : "");
 
       // 세션 스토리지에서 리다이렉트 정보 확인
       let sessionRedirectPath = "";
@@ -77,66 +83,32 @@ export default function Index() {
             window.history.replaceState(
               {},
               document.title,
-              window.location.pathname
+              baseUrl + window.location.pathname
             );
           });
         return;
       }
 
       // 세션 스토리지에서 리다이렉트 정보가 있는 경우 우선 처리
-      if (sessionRedirectPath && sessionRedirectPath !== "/") {
-        const targetPath = sessionRedirectPath.startsWith("/")
-          ? sessionRedirectPath
-          : `/${sessionRedirectPath}`;
-        const validPaths = ["/login", "/register", "/(app)/main"];
-
-        if (validPaths.includes(targetPath)) {
-          console.log(
-            "Index - Redirecting from session storage to:",
-            targetPath
-          );
-          setRedirectPath(targetPath);
-          return;
-        }
-      }
-
-      // GitHub Pages 서브패스 처리
-      if (currentPath.includes("/easy-to-do/")) {
-        const pathAfterBase = currentPath
-          .replace("/easy-to-do/", "")
-          .replace("/easy-to-do", "");
-        console.log("Index - Path after base:", pathAfterBase);
-
-        if (pathAfterBase && pathAfterBase !== "/") {
-          const targetPath = pathAfterBase.startsWith("/")
-            ? pathAfterBase
-            : `/${pathAfterBase}`;
-          const validPaths = ["/login", "/register", "/(app)/main"];
-
-          if (validPaths.includes(targetPath)) {
-            setRedirectPath(targetPath);
-            return;
-          }
-        }
+      if (sessionRedirectPath) {
+        const path = sessionRedirectPath.replace(baseUrl, "");
+        console.log("Index - Using session redirect path:", path);
+        setRedirectPath(path);
+        return;
       }
 
       // 리다이렉트 파라미터 처리
       if (redirectParam) {
-        const validPaths = ["/login", "/register", "/(app)/main"];
-        const targetPath = redirectParam.startsWith("/")
-          ? redirectParam
-          : `/${redirectParam}`;
-
-        if (validPaths.includes(targetPath)) {
-          setRedirectPath(targetPath);
-          return;
-        }
+        const path = redirectParam.replace(baseUrl, "");
+        console.log("Index - Using redirect param:", path);
+        setRedirectPath(path);
+        return;
       }
 
       // 기본값: 로그인 페이지
       setRedirectPath("/login");
     }
-  }, []);
+  }, [baseUrl]);
 
   // 클라이언트가 준비되지 않았거나 인증 처리 중이면 로딩 화면 표시
   if (!isClient || isProcessingAuth) {

@@ -12,39 +12,35 @@
         console.log("404.html - Current location:", l.href);
         console.log("404.html - Pathname:", l.pathname);
 
-        // 현재 경로에서 서브패스 제거
-        var currentPath =
-          l.pathname.replace(baseUrl, "").replace("/easy-to-do", "") || "";
+        // 현재 경로에서 서브패스 유지
+        var currentPath = l.pathname;
+        if (!currentPath.startsWith(baseUrl)) {
+          currentPath =
+            baseUrl +
+            (currentPath.startsWith("/") ? currentPath.slice(1) : currentPath);
+        }
 
-        console.log("404.html - Extracted path:", currentPath);
+        console.log("404.html - Final path:", currentPath);
 
         // 쿼리 파라미터와 해시 보존
-        var queryString = l.search ? l.search.slice(1) : "";
+        var queryString = l.search || "";
         var hash = l.hash || "";
 
         // 메인 페이지로 리다이렉트하면서 경로 정보를 세션 스토리지에 저장
-        if (currentPath && currentPath !== "/") {
-          try {
-            sessionStorage.setItem("redirect-path", currentPath);
-            if (queryString) {
-              sessionStorage.setItem("redirect-search", queryString);
-            }
-            if (hash) {
-              sessionStorage.setItem("redirect-hash", hash);
-            }
-          } catch (e) {
-            console.warn("SessionStorage not available:", e);
+        try {
+          sessionStorage.setItem("redirect-path", currentPath);
+          if (queryString) {
+            sessionStorage.setItem("redirect-search", queryString);
           }
+          if (hash) {
+            sessionStorage.setItem("redirect-hash", hash);
+          }
+        } catch (e) {
+          console.warn("SessionStorage not available:", e);
         }
 
         // 메인 페이지로 리다이렉트
-        var redirectUrl =
-          l.protocol +
-          "//" +
-          l.hostname +
-          (l.port ? ":" + l.port : "") +
-          baseUrl;
-
+        var redirectUrl = currentPath + queryString + hash;
         console.log("404.html - Redirecting to:", redirectUrl);
         window.location.replace(redirectUrl);
       })();
