@@ -4,45 +4,62 @@
     <meta charset="utf-8" />
     <title>Easy To-Do - Redirecting...</title>
     <script type="text/javascript">
-      // GitHub Pages SPA 라우팅을 위한 리다이렉트
+      // GitHub Pages SPA 라우팅을 위한 리다이렉트 (향상된 버전)
       (function () {
         var l = window.location;
-        var baseUrl = "/easy-to-do/";
+        var ghPagesAppName = "easy-to-do"; // GitHub Pages 리포지토리 이름 또는 서브패스
+        var baseUrl = "/" + ghPagesAppName + "/";
 
         console.log("404.html - Current location:", l.href);
-        console.log("404.html - Pathname:", l.pathname);
+        console.log("404.html - Original Pathname:", l.pathname);
 
-        // 현재 경로에서 서브패스 유지
-        var currentPath = l.pathname;
-        if (!currentPath.startsWith(baseUrl)) {
-          currentPath =
-            baseUrl +
-            (currentPath.startsWith("/") ? currentPath.slice(1) : currentPath);
+        // 사용자가 접근하려던 전체 경로 (예: /easy-to-do/login?param=1)
+        var intendedPathAndQuery = l.pathname + l.search;
+        var intendedHash = l.hash;
+
+        // 만약 경로가 이미 올바른 baseUrl로 시작하지 않는다면 (예: 커스텀 도메인 루트에서 직접 접근 시도)
+        // 그리고 l.pathname이 단순히 ghPagesAppName으로만 구성된 경우 (예: /easy-to-do) 실제로는 /easy-to-do/를 의도한 것일 수 있음
+        if (!intendedPathAndQuery.startsWith(baseUrl)) {
+          if (l.pathname === "/" + ghPagesAppName) {
+            intendedPathAndQuery = baseUrl + l.search; // /easy-to-do/ + query
+          } else if (l.pathname.startsWith("/")) {
+            // 의도된 경로를 baseUrl 뒤에 붙임 (예: /login -> /easy-to-do/login)
+            intendedPathAndQuery =
+              baseUrl +
+              (intendedPathAndQuery.startsWith("/")
+                ? intendedPathAndQuery.substring(1)
+                : intendedPathAndQuery);
+          } else {
+            intendedPathAndQuery = baseUrl + intendedPathAndQuery;
+          }
         }
 
-        console.log("404.html - Final path:", currentPath);
+        console.log(
+          "404.html - Storing intended path+query:",
+          intendedPathAndQuery
+        );
+        console.log("404.html - Storing intended hash:", intendedHash);
 
-        // 쿼리 파라미터와 해시 보존
-        var queryString = l.search || "";
-        var hash = l.hash || "";
-
-        // 메인 페이지로 리다이렉트하면서 경로 정보를 세션 스토리지에 저장
         try {
-          sessionStorage.setItem("redirect-path", currentPath);
-          if (queryString) {
-            sessionStorage.setItem("redirect-search", queryString);
-          }
-          if (hash) {
-            sessionStorage.setItem("redirect-hash", hash);
-          }
+          // 전체 경로(쿼리 포함)와 해시를 분리하여 저장
+          sessionStorage.setItem("redirect-path-query", intendedPathAndQuery);
+          sessionStorage.setItem("redirect-hash", intendedHash);
         } catch (e) {
-          console.warn("SessionStorage not available:", e);
+          console.warn("404.html - SessionStorage not available:", e);
+          // SessionStorage를 사용할 수 없는 경우, 경로 정보를 URL 파라미터로 전달하는 등의 fallback 고려 가능
         }
 
-        // 메인 페이지로 리다이렉트
-        var redirectUrl = currentPath + queryString + hash;
-        console.log("404.html - Redirecting to:", redirectUrl);
-        window.location.replace(redirectUrl);
+        // SPA의 루트로 리디렉션 (예: https://username.github.io/easy-to-do/)
+        // 이렇게 하면 index.html이 로드되고, 클라이언트 사이드 라우터가 sessionStorage의 경로를 사용함
+        var spaRootUrl =
+          l.protocol +
+          "//" +
+          l.hostname +
+          (l.port ? ":" + l.port : "") +
+          baseUrl;
+
+        console.log("404.html - Redirecting to SPA root:", spaRootUrl);
+        window.location.replace(spaRootUrl);
       })();
     </script>
   </head>

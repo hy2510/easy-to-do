@@ -1,117 +1,139 @@
 import { Redirect } from "expo-router";
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { Platform, Text, View } from "react-native";
 import { supabase } from "./lib/supabase";
 
 export default function Index() {
   const [isClient, setIsClient] = useState(false);
-  const [redirectPath, setRedirectPath] = useState<string>("/login");
+  const [redirectHref, setRedirectHref] = useState<string | null>(null);
   const [isProcessingAuth, setIsProcessingAuth] = useState(false);
-  const [baseUrl, setBaseUrl] = useState<string>("");
+  const [appBaseUrl, setAppBaseUrl] = useState<string>("");
+
+  const determineBaseUrl = useCallback(() => {
+    if (typeof window !== "undefined") {
+      const path = window.location.pathname;
+      // GitHub Pages의 경우 pathname이 /repoName/ 또는 /repoName/path/to/page 형태임
+      if (path.includes("/easy-to-do/")) {
+        return "/easy-to-do";
+      }
+    }
+    return "";
+  }, []);
 
   useEffect(() => {
-    // 클라이언트 사이드임을 표시
     setIsClient(true);
+    const currentBaseUrl = determineBaseUrl();
+    setAppBaseUrl(currentBaseUrl);
 
-    // 웹에서만 URL 파라미터 및 경로 확인
     if (Platform.OS === "web" && typeof window !== "undefined") {
-      const currentPath = window.location.pathname;
-      const searchParams = new URLSearchParams(window.location.search);
-      const hashParams = new URLSearchParams(window.location.hash.substring(1));
-      const redirectParam = searchParams.get("redirect");
+      const processRouting = async () => {
+        const hashParams = new URLSearchParams(
+          window.location.hash.substring(1)
+        );
+        const accessToken = hashParams.get("access_token");
+        const refreshToken = hashParams.get("refresh_token");
+        const tokenType = hashParams.get("type");
 
-      // GitHub Pages 기본 URL 설정
-      const isGitHubPages = currentPath.includes("/easy-to-do/");
-      setBaseUrl(isGitHubPages ? "/easy-to-do" : "");
-
-      console.log("Index - Current path:", currentPath);
-      console.log("Index - Redirect param:", redirectParam);
-      console.log("Index - Hash params:", window.location.hash);
-      console.log("Index - Base URL:", isGitHubPages ? "/easy-to-do" : "");
-
-      // 세션 스토리지에서 리다이렉트 정보 확인
-      let sessionRedirectPath = "";
-      let sessionSearch = "";
-      let sessionHash = "";
-
-      try {
-        sessionRedirectPath = sessionStorage.getItem("redirect-path") || "";
-        sessionSearch = sessionStorage.getItem("redirect-search") || "";
-        sessionHash = sessionStorage.getItem("redirect-hash") || "";
-
-        // 사용한 후 제거
-        if (sessionRedirectPath) {
-          sessionStorage.removeItem("redirect-path");
-          sessionStorage.removeItem("redirect-search");
-          sessionStorage.removeItem("redirect-hash");
-          console.log("Index - Session redirect path:", sessionRedirectPath);
-        }
-      } catch (e) {
-        console.warn("SessionStorage not available:", e);
-      }
-
-      // 이메일 인증 토큰 처리
-      const accessToken = hashParams.get("access_token");
-      const refreshToken = hashParams.get("refresh_token");
-      const tokenType = hashParams.get("type");
-
-      if (
-        accessToken &&
-        refreshToken &&
-        (tokenType === "signup" || tokenType === "recovery")
-      ) {
-        console.log("Index - Processing email verification tokens...");
-        setIsProcessingAuth(true);
-
-        // Supabase 세션 설정
-        supabase.auth
-          .setSession({
+        if (
+          accessToken &&
+          refreshToken &&
+          (tokenType === "signup" || tokenType === "recovery")
+        ) {
+          console.log("Index - Processing email verification tokens...");
+          setIsProcessingAuth(true);
+          const { error } = await supabase.auth.setSession({
             access_token: accessToken,
             refresh_token: refreshToken,
-          })
-          .then(({ data, error }) => {
-            if (error) {
-              console.error("Session setting error:", error);
-              setRedirectPath("/login");
-            } else {
-              console.log("Email verification successful, redirecting to main");
-              setRedirectPath("/(app)/main");
-            }
-            setIsProcessingAuth(false);
-
-            // URL에서 토큰 제거
-            window.history.replaceState(
-              {},
-              document.title,
-              baseUrl + window.location.pathname
-            );
           });
-        return;
-      }
+          if (error) {
+            console.error("Index - Session setting error:", error);
+            setRedirectHref(currentBaseUrl + "/login");
+          } else {
+            console.log(
+              "Index - Email verification successful, redirecting to main"
+            );
+            setRedirectHref(currentBaseUrl + "/(app)/main");
+          }
+          setIsProcessingAuth(false);
+          // URL에서 토큰 정리. 전체 경로를 사용해야 함.
+          window.history.replaceState(
+            {},
+            document.title,
+            window.location.pathname
+          );
+          return;
+        }
 
-      // 세션 스토리지에서 리다이렉트 정보가 있는 경우 우선 처리
-      if (sessionRedirectPath) {
-        const path = sessionRedirectPath.replace(baseUrl, "");
-        console.log("Index - Using session redirect path:", path);
-        setRedirectPath(path);
-        return;
-      }
+        let sessionPathQuery = "";
+        let sessionHash = "";
+        try {
+          sessionPathQuery =
+            sessionStorage.getItem("redirect-path-query") || "";
+          sessionHash = sessionStorage.getItem("redirect-hash") || "";
+          if (sessionPathQuery) {
+            sessionStorage.removeItem("redirect-path-query");
+            sessionStorage.removeItem("redirect-hash");
+            console.log(
+              "Index - Session redirect path+query:",
+              sessionPathQuery
+            );
+            console.log("Index - Session redirect hash:", sessionHash);
+          }
+        } catch (e) {
+          console.warn("Index - SessionStorage not available:", e);
+        }
 
-      // 리다이렉트 파라미터 처리
-      if (redirectParam) {
-        const path = redirectParam.replace(baseUrl, "");
-        console.log("Index - Using redirect param:", path);
-        setRedirectPath(path);
-        return;
-      }
+        if (sessionPathQuery) {
+          // sessionPathQuery는 /easy-to-do/path?query 형태임
+          // Expo Router는 앱 내부 경로를 사용하므로, /easy-to-do 부분을 제거해야 함
+          const appSpecificPath = sessionPathQuery.startsWith(
+            currentBaseUrl + "/"
+          )
+            ? sessionPathQuery.substring(currentBaseUrl.length)
+            : sessionPathQuery; // 기본 경로가 없다면 그대로 사용
+          const finalHref = appSpecificPath + sessionHash;
+          console.log(`Index - Redirecting from session to: ${finalHref}`);
+          setRedirectHref(finalHref);
+          return;
+        }
 
-      // 기본값: 로그인 페이지
-      setRedirectPath("/login");
+        // 만약 현재 경로가 baseUrl과 정확히 일치하거나 baseUrl + '/' 인 경우, 기본 페이지로 리다이렉트
+        if (
+          window.location.pathname === currentBaseUrl ||
+          window.location.pathname === currentBaseUrl + "/"
+        ) {
+          // 사용자가 이미 인증되었는지 확인하여 /main 또는 /login으로 보낼 수 있습니다.
+          // 여기서는 간단히 /login으로 보냅니다.
+          const defaultPage = "/login";
+          console.log(
+            `Index - Redirecting to default page: ${
+              currentBaseUrl + defaultPage
+            }`
+          );
+          setRedirectHref(currentBaseUrl + defaultPage);
+          return;
+        }
+
+        // 위 조건에 해당하지 않고, sessionPathQuery도 없다면,
+        // 현재 URL을 그대로 사용하되, Expo Router가 처리할 수 있도록 baseUrl을 제외한 경로를 전달
+        const currentAppPath = window.location.pathname.startsWith(
+          currentBaseUrl + "/"
+        )
+          ? window.location.pathname.substring(currentBaseUrl.length)
+          : window.location.pathname;
+        const currentQueryAndHash =
+          window.location.search + window.location.hash;
+        const finalHrefFromCurrent = currentAppPath + currentQueryAndHash;
+        console.log(
+          `Index - Using current URL for Expo Router: ${finalHrefFromCurrent}`
+        );
+        setRedirectHref(finalHrefFromCurrent);
+      };
+      processRouting();
     }
-  }, [baseUrl]);
+  }, [determineBaseUrl]);
 
-  // 클라이언트가 준비되지 않았거나 인증 처리 중이면 로딩 화면 표시
-  if (!isClient || isProcessingAuth) {
+  if (!isClient || isProcessingAuth || redirectHref === null) {
     return (
       <View
         style={{
@@ -122,12 +144,20 @@ export default function Index() {
         }}
       >
         <Text style={{ fontSize: 16, color: "#666" }}>
-          {isProcessingAuth ? "이메일 인증 처리 중..." : "Loading..."}
+          {isProcessingAuth ? "이메일 인증 처리 중..." : "페이지 로딩 중..."}
         </Text>
       </View>
     );
   }
 
-  console.log("Index - Redirecting to:", redirectPath);
-  return <Redirect href={redirectPath as any} />;
+  console.log("Index - Final Redirect Href:", redirectHref);
+  // Redirect href가 절대 경로일 수도 있으므로, Expo Router의 Redirect는 상대경로를 기대함.
+  // 따라서 appBaseUrl이 있으면 이를 제거한 상대경로를 전달해야 함.
+  const expoRouterHref =
+    appBaseUrl && redirectHref.startsWith(appBaseUrl + "/")
+      ? redirectHref.substring(appBaseUrl.length)
+      : redirectHref;
+  console.log("Index - Expo Router Href:", expoRouterHref);
+
+  return <Redirect href={expoRouterHref as any} />;
 }
