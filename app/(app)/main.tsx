@@ -1,12 +1,35 @@
 import { router } from "expo-router";
 import React, { useEffect, useState } from "react";
-import { ActivityIndicator, Alert, StyleSheet, Text, View } from "react-native";
+import {
+  ActivityIndicator,
+  Alert,
+  Platform,
+  StyleSheet,
+  Text,
+  View,
+} from "react-native";
 import Calendar from "../components/Calendar";
 import { supabase, UserProfile } from "../lib/supabase";
 
 export default function MainScreen() {
   const [userProfile, setUserProfile] = useState<UserProfile | null>(null);
   const [loading, setLoading] = useState(true);
+
+  const navigateToLogin = () => {
+    // 플랫폼별 라우팅 처리
+    if (Platform.OS === "web") {
+      // 웹에서는 GitHub Pages 서브패스 유지를 위해 전체 URL 사용
+      const currentBaseUrl = window.location.pathname.includes("/easy-to-do/")
+        ? "/easy-to-do"
+        : "";
+      const loginUrl = window.location.origin + currentBaseUrl + "/login";
+      console.log("Main - Redirecting to login (web):", loginUrl);
+      window.location.href = loginUrl;
+    } else {
+      // 앱에서는 기존 Expo Router 사용
+      router.replace("/login");
+    }
+  };
 
   const fetchUserProfile = async () => {
     try {
@@ -20,7 +43,7 @@ export default function MainScreen() {
       } = await supabase.auth.getUser();
 
       if (!user) {
-        router.replace("/login");
+        navigateToLogin();
         return;
       }
 
@@ -64,7 +87,7 @@ export default function MainScreen() {
         return;
       }
 
-      router.replace("/login");
+      navigateToLogin();
     } catch (error) {
       Alert.alert("오류", "로그아웃 중 문제가 발생했습니다.");
     }

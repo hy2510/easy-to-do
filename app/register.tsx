@@ -116,7 +116,23 @@ export default function RegisterScreen() {
         // 이메일 인증이 필요한 경우
         const message = `${email}로 인증 이메일을 발송했습니다. 이메일을 확인하고 인증을 완료해주세요.`;
         setErrorMessage("");
-        showAlert("인증 이메일 발송", message, () => router.replace("/login"));
+        showAlert("인증 이메일 발송", message, () => {
+          // 플랫폼별 라우팅 처리
+          if (Platform.OS === "web") {
+            // 웹에서는 GitHub Pages 서브패스 유지를 위해 전체 URL 사용
+            const currentBaseUrl = window.location.pathname.includes(
+              "/easy-to-do/"
+            )
+              ? "/easy-to-do"
+              : "";
+            const loginUrl = window.location.origin + currentBaseUrl + "/login";
+            console.log("Register - Redirecting to login (web):", loginUrl);
+            window.location.href = loginUrl;
+          } else {
+            // 앱에서는 기존 Expo Router 사용
+            router.replace("/login");
+          }
+        });
         return;
       }
 
@@ -149,7 +165,24 @@ export default function RegisterScreen() {
         showAlert(
           "회원가입 완료",
           "회원가입이 성공적으로 완료되었습니다!",
-          () => router.replace("/(app)/main")
+          () => {
+            // 플랫폼별 라우팅 처리
+            if (Platform.OS === "web") {
+              // 웹에서는 GitHub Pages 서브패스 유지를 위해 전체 URL 사용
+              const currentBaseUrl = window.location.pathname.includes(
+                "/easy-to-do/"
+              )
+                ? "/easy-to-do"
+                : "";
+              const mainUrl =
+                window.location.origin + currentBaseUrl + "/(app)/main";
+              console.log("Register - Redirecting to main (web):", mainUrl);
+              window.location.href = mainUrl;
+            } else {
+              // 앱에서는 기존 Expo Router 사용
+              router.replace("/(app)/main");
+            }
+          }
         );
       }
     } catch (error) {
@@ -225,7 +258,24 @@ export default function RegisterScreen() {
 
           <TouchableOpacity
             style={styles.loginButton}
-            onPress={() => router.push("/login")}
+            onPress={() => {
+              // 플랫폼별 라우팅 처리
+              if (Platform.OS === "web") {
+                // 웹에서는 GitHub Pages 서브패스 유지를 위해 전체 URL 사용
+                const currentBaseUrl = window.location.pathname.includes(
+                  "/easy-to-do/"
+                )
+                  ? "/easy-to-do"
+                  : "";
+                const loginUrl =
+                  window.location.origin + currentBaseUrl + "/login";
+                console.log("Register - Redirecting to login (web):", loginUrl);
+                window.location.href = loginUrl;
+              } else {
+                // 앱에서는 기존 Expo Router 사용
+                router.push("/login");
+              }
+            }}
             disabled={loading}
           >
             <Text style={styles.loginButtonText}>

@@ -5,6 +5,7 @@ import { Platform, Text, View } from "react-native";
 export default function NotFound() {
   const [isClient, setIsClient] = useState(false);
   const [redirectPath, setRedirectPath] = useState<string>("/login");
+  const [shouldRedirect, setShouldRedirect] = useState(false);
 
   useEffect(() => {
     setIsClient(true);
@@ -14,30 +15,18 @@ export default function NotFound() {
       const currentPath = window.location.pathname;
       console.log("NotFound - Current path:", currentPath);
 
-      // GitHub Pages 서브패스에서 실제 경로 추출
-      if (currentPath.includes("/")) {
-        const pathAfterBase = currentPath
-          .replace("/easy-to-do/", "")
-          .replace("/easy-to-do", "");
-        console.log("NotFound - Path after base:", pathAfterBase);
+      // GitHub Pages 서브패스 유지를 위해 전체 URL로 리디렉션
+      const currentBaseUrl = currentPath.includes("/easy-to-do/")
+        ? "/easy-to-do"
+        : "";
+      const loginUrl = window.location.origin + currentBaseUrl + "/login";
 
-        if (pathAfterBase && pathAfterBase !== "/" && pathAfterBase !== "") {
-          const targetPath = pathAfterBase.startsWith("/")
-            ? pathAfterBase
-            : `/${pathAfterBase}`;
-          const validPaths = ["/login", "/register"];
-
-          if (validPaths.includes(targetPath)) {
-            console.log("NotFound - Redirecting to:", targetPath);
-            setRedirectPath(targetPath);
-            return;
-          }
-        }
-      }
-
-      // 기본값: 로그인 페이지
-      console.log("NotFound - Redirecting to default: /easy-to-do/login");
-      setRedirectPath("/easy-to-do/login");
+      console.log("NotFound - Redirecting to login (web):", loginUrl);
+      window.location.href = loginUrl;
+      return;
+    } else {
+      // 앱에서는 Expo Router 사용
+      setShouldRedirect(true);
     }
   }, []);
 
@@ -57,5 +46,41 @@ export default function NotFound() {
     );
   }
 
-  return <Redirect href={redirectPath as any} />;
+  // 웹에서는 window.location.href로 이미 처리되므로 로딩 화면 유지
+  if (Platform.OS === "web") {
+    return (
+      <View
+        style={{
+          flex: 1,
+          justifyContent: "center",
+          alignItems: "center",
+          backgroundColor: "#f5f5f5",
+        }}
+      >
+        <Text style={{ fontSize: 16, color: "#666" }}>
+          페이지를 찾을 수 없습니다. 리디렉션 중...
+        </Text>
+      </View>
+    );
+  }
+
+  // 앱에서만 Expo Router의 Redirect 사용
+  if (shouldRedirect) {
+    return <Redirect href={redirectPath as any} />;
+  }
+
+  return (
+    <View
+      style={{
+        flex: 1,
+        justifyContent: "center",
+        alignItems: "center",
+        backgroundColor: "#f5f5f5",
+      }}
+    >
+      <Text style={{ fontSize: 16, color: "#666" }}>
+        페이지를 찾을 수 없습니다.
+      </Text>
+    </View>
+  );
 }
